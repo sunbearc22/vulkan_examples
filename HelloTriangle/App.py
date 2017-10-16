@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """
-vulkan app to draw a 3D image
+vulkan app to draw a 2D HelloTriangle.
 """
 __author__ = 'sunbearc22'
 __version__ = "0.1.0"

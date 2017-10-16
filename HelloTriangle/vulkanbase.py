@@ -25,7 +25,6 @@ class Setup(object):
         self.window = window
         self.instance_extensions = ['VK_KHR_surface'] #declares the VkSurfaceKHR object, and provides a function for destroying VkSurfaceKHR objects.
         self.instance_layers = ['VK_LAYER_LUNARG_standard_validation']
-        #self.instance_layers = []
         self.instance = None
         self.fnp = {}
         self.surface = None
@@ -50,7 +49,6 @@ class Setup(object):
         self.swapchain_framebuffers = []
         self.command_pool = None
         self.command_buffers = None
-        
         self.semaphore_image_available = None
         self.semaphore_image_drawn = None
         
@@ -63,17 +61,9 @@ class Setup(object):
         self._createLogicalDevice()
         self._getGraphicsPresentQueue()
         self._createSwapChain()
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
         self._createImageviews()
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
         self._renderPass()
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
         self._createGraphicsPipeline()
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
         self._createFramebuffers()
         self._createCommandPool()
         self._createCommandBuffer()
@@ -571,7 +561,10 @@ class Setup(object):
         uint32_max = 0xFFFFFFFF
         if surface_capabilities.currentExtent.width != uint32_max:
             logging.info('Swapchain size must exactly match the surface size.')
-            sc_imageExtent = surface_capabilities.currentExtent
+            #sc_imageExtent = surface_capabilities.currentExtent
+            sc_imageExtent = VkExtent2D(
+                width = surface_capabilities.currentExtent.width,
+                height = surface_capabilities.currentExtent.height)
 
         else:
             logging.info('Swapchain size does not need to match surface size.')
@@ -616,6 +609,8 @@ class Setup(object):
         logging.debug(' - 0x00000004 = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR')
         logging.debug(' - 0x00000008 = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR')
         sc_compositeAlpha = surface_capabilities.supportedCompositeAlpha
+        logging.info('surface CompositeAlpha = {}'.format(
+            surface_capabilities.supportedCompositeAlpha) )
         logging.info('Set swapchain CompositeAlpha to match surface = {}'.format(
             sc_compositeAlpha))
 
@@ -858,11 +853,6 @@ class Setup(object):
         #      mipmapping levels
         #  - Here, the view used is suited for 2D framebuffering.
 
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
-
-        self.swapchain_imageViews = []
-        
         # Component specifies a remapping of color components (or of depth or 
         # stencil components after they have been converted into color 
         # components). Allows us to swizzle the color channels around if need. 
@@ -874,8 +864,6 @@ class Setup(object):
             a = VK_COMPONENT_SWIZZLE_IDENTITY
             )
         logging.info('Set swapchain_image_components.')
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
 
         # subresourceRange describes what the image's purpose is and which part
         # of the image should be accessed. Our images will be used as color
@@ -888,44 +876,38 @@ class Setup(object):
             layerCount = 1
             )
         logging.info('Set swapchain_image_subresourceRange.')
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
 
         #2. Create a view of each swapchain image and store in an array.
-        for i, image in enumerate(self.swapchain_images):
+        try:
+            for i, image in enumerate(self.swapchain_images):
 
-            # Create swapchain imageview createInfo
-            createInfo = VkImageViewCreateInfo(
-                sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                pNext = None,
-                flags = 0,
-                image = image,
-                # the current VkImage on which the view will be created.
-                viewType = VK_IMAGE_VIEW_TYPE_2D,
-                #treat images as 1D, 2D or 3D textures or cube maps.
-                format = self.swapchain_imageFormat,
-                components = swapchain_image_components,
-                subresourceRange = swapchain_image_subresourceRange
-                )
-            logging.info('Created swapchain image {} view createinfo.'.format(i))
-            print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-            print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
+                # Create swapchain imageview createInfo
+                createInfo = VkImageViewCreateInfo(
+                    sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                    pNext = None,
+                    flags = 0,
+                    image = image,
+                    # the current VkImage on which the view will be created.
+                    viewType = VK_IMAGE_VIEW_TYPE_2D,
+                    #treat images as 1D, 2D or 3D textures or cube maps.
+                    format = self.swapchain_imageFormat,
+                    components = swapchain_image_components,
+                    subresourceRange = swapchain_image_subresourceRange
+                    )
+                logging.info('Created swapchain image {} view createinfo.'.format(i))
 
-            # Create swapchain imageviews
-            self.swapchain_imageViews.append(
-                vkCreateImageView( self.logical_device, createInfo, None))
-            logging.info('Created Swapchain Image View [{}].'.format(i))
+                # Create swapchain imageviews
+                self.swapchain_imageViews.append(
+                    vkCreateImageView( self.logical_device, createInfo, None))
+                logging.info('Created Swapchain Image View [{}].'.format(i))
 
-        logging.info('- The image views are now only sufficient to be used ')
-        logging.info("  as textures. To make them as render targets, we need")
-        logging.info("  to first set up the graphics pipeline and framebuffer.") 
+            logging.info('- The image views are now only sufficient to be used ')
+            logging.info("  as textures. To make them as render targets, we need")
+            logging.info("  to first set up the graphics pipeline and framebuffer.") 
 
-        #except VkError:
-        #    logging.error('Swapchain imageview(s) failed to create.')
+        except VkError:
+            logging.error('Swapchain imageview(s) failed to create.')
                 
-        print('self.swapchain_imageExtent.width = {}'.format(self.swapchain_imageExtent.width))
-        print('self.swapchain_imageExtent.height = {}'.format(self.swapchain_imageExtent.height))
-
 
     def _renderPass(self):
         ''' Create Render Pass.
@@ -958,7 +940,6 @@ class Setup(object):
             finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
             # present to swapchain after rendering
         logging.info('Created render pass color_attachement')
-
 
         #2. Describe attachment reference.
         #   - use one subpass to create color buffer.
@@ -1061,7 +1042,7 @@ class Setup(object):
         ''' Method to load the Spir-V vertex and fragment shaders, create the 
         shader modules and create the shader stages.
 
-        Note:
+        Notes:
         - For this method to work, the vertex and fragment shaders need to be
           created first.
         - Variable name within this function can be kept local, except
@@ -1073,7 +1054,7 @@ class Setup(object):
 
         #2. Load the Spir-V Vertex and Fragment Shaders.
         path = os.path.dirname(os.path.abspath(__file__))
-        print('path = ', path)
+
         with open(os.path.join(path, "vert.spv"), 'rb') as f:
             vert_shader_spirv = f.read()
         with open(os.path.join(path, "frag.spv"), 'rb' ) as f:
@@ -1095,7 +1076,6 @@ class Setup(object):
             logging.info('Created fragment shader module.')
         except VkError:
             logging.error('Vertex and/or Fragment Shader Modules fail to create.')
-
 
         #4. Create the info to create the Vertex and Fragment shader stages.
         vert_shader_stage = VkPipelineShaderStageCreateInfo(
@@ -1158,8 +1138,6 @@ class Setup(object):
             minDepth = 0.,
             maxDepth = 1.)
         
-        print('self.swapchain_imageExtent.width =', self.swapchain_imageExtent.width)
-        print('self.swapchain_imageExtent.height =', self.swapchain_imageExtent.height)
         scissor_offset = VkOffset2D(x=0, y=0)
         scissor = VkRect2D( offset = scissor_offset,
                             extent = self.swapchain_imageExtent )
@@ -1312,13 +1290,8 @@ class Setup(object):
         - Create a framebuffer array
         - Bind each element of swapchain_imageviews array to a framebuffer
           array element.'''
-        print('self.swapchain_imageExtent.width =', self.swapchain_imageExtent.width)
-        print('self.swapchain_imageExtent.height =', self.swapchain_imageExtent.height)
         try:
             for imageview in self.swapchain_imageViews:
-                print('self.swapchain_imageExtent.width =', self.swapchain_imageExtent.width)
-                print('self.swapchain_imageExtent.height =', self.swapchain_imageExtent.height)
-                #print('imageview = {}'.format(x) for x in hf.convert_to_python(imageview))
                 attachments = [imageview] 
 
                 createInfo = VkFramebufferCreateInfo(
@@ -1403,7 +1376,7 @@ class Setup(object):
                 #   The pixels outside this region will have undefined values.
                 #   It should match the size of the attachments for best performance.
 
-                color = VkClearColorValue( float32 = [0., 0., 0., 1.] )
+                color = VkClearColorValue( float32 = [0., 0., 0., 1.0] )
                 clear_value = VkClearValue( color = color )
                 # - clear values to use for VK_ATTACHMENT_LOAD_OP_CLEAR, which 
                 #   we used as load operation for the color attachment. Here, 
@@ -1422,7 +1395,7 @@ class Setup(object):
                 # start render pass
                 vkCmdBeginRenderPass( command_buffer,
                                       render_pass_begin_create,
-                                      VK_SUBPASS_CONTENTS_INLINE) # see below comment
+                                      VK_SUBPASS_CONTENTS_INLINE ) # see below comment
                 # The render pass commands will be embedded in the primary command buffer
                 # itself and no secondary command buffers will be executed.
 
@@ -1576,6 +1549,8 @@ class Setup(object):
             logging.info('Destroyed Vulkan Swapchain.')
 
         vkDeviceWaitIdle(self.logical_device)
+        logging.info('All outstanding queue operations for all queues in Logical'
+                     ' Device have ceased.')
         if self.logical_device:
             vkDestroyDevice(self.logical_device, None)
             logging.info('Destroyed Vulkan Logical Device.')
@@ -1589,6 +1564,4 @@ class Setup(object):
             logging.info('Destroyed Vulkan Instance.')
 
 
-   
-#if __name__ == '__main__':
-    
+     

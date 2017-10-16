@@ -10,6 +10,9 @@ __license__ = "MIT"
 # Python3 modules
 import logging
 
+# API
+from vulkan import vkDeviceWaitIdle
+
 # Application Modules
 import sdl2window as sw
 import vulkanbase as vb
@@ -18,8 +21,8 @@ import vulkanbase as vb
 # Global variables
 ###############################################################################
 TITLE = 'HelloTriangle'
-WIDTH = 800
-HEIGHT = 800
+WIDTH = 400
+HEIGHT = 400
 LOGFORMAT = '%(asctime)s [%(process)d] %(name)s %(module)s.%(funcName)-33s'\
             '+%(lineno)-5s: %(levelname)-8s %(message)s'
 
@@ -37,11 +40,6 @@ class VulkanApp(object):
 
     def _initWindow(self):
         self.vulkan_window = sw.SetWindow(title=TITLE, w=WIDTH, h=HEIGHT)
-        #w,h = self.vulkan_window.getWindowSize()
-        #dw,dh = self.vulkan_window.getDrawableSize()
-        #print('self.vulkan_window.info.subsystem =',
-        #      slf.vulkan_window.info.subsystem)
-        #self.vulkan_window.destroy()
 
     def _initVulkan(self, window):
         self.vulkan_base = vb.Setup(window)
@@ -50,17 +48,17 @@ class VulkanApp(object):
     def _mainLoop(self):
         # Main loop
         running = True
-        
-        logging.info('Drawing Loop executing')
+        logging.info('Executing Draw Loop.')
         while running:
             events = sw.sdl2.ext.get_events()
             self.vulkan_base._drawFrame()
             for event in events:
                 if event.type == sw.sdl2.SDL_QUIT:
-                    logging.info('Drawing Loop executing')
+                    logging.info('Exit event triggered: Leaving Draw Loop.')
                     running = False
-                    self.vulkan_base.vkDeviceWaitIdle(
-                        self.vulkan_base.logical_device)
+                    vkDeviceWaitIdle( self.vulkan_base.logical_device )
+                    logging.info('All outstanding queue operations for all'
+                                 ' queues in Logical Device have ceased.')
                     break
 
 def main():

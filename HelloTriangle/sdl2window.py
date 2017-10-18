@@ -26,7 +26,7 @@ import sdl2.ext
 #RESOURCES = sdl2.ext.Resources(__file__, "resources")
 
 #LOGFORMAT = '%(asctime)s [%(process)d] %(name)s %(module)s.%(funcName)-33s +%(lineno)-5s: %(levelname)-8s %(message)s'
-LOGFORMAT = '%(asctime)s %(module)s.%(funcName)-33s +%(lineno)-5s: %(levelname)-8s %(message)s'
+LOGFORMAT = '%(asctime)s %(module)-15s.%(funcName)-30s +%(lineno)-5s: %(levelname)-8s %(message)s'
 logging.basicConfig(level=logging.DEBUG, format=LOGFORMAT)
 #logging.basicConfig(level=logging.INFO, format=LOGFORMAT)
 
@@ -86,8 +86,10 @@ class SetWindow:
             exit()
         logging.info('SDL2 library with video flag initialised.')
 
-        self.window = sdl2.SDL_CreateWindow(
-            self.title.encode('ascii'), self.x, self.y, self.w, self.h, self.flag)
+        self.window = sdl2.SDL_CreateWindow( self.title.encode('ascii'),
+                                             self.x, self.y,
+                                             self.w, self.h,
+                                             self.flag)
         if not self.window: 
             logging.error('Fail to create SDL2 window.')
             exit()
@@ -107,42 +109,50 @@ class SetWindow:
             self.info.version.patch))
 
         if sdl2.SDL_GetWindowWMInfo(self.window, ctypes.byref(self.info)) != 1:
-            logging.error('sdl2.SDL_GetWindowWMInfo failed: Could not get window'
-                          ' subsystem.')
+            logging.error('sdl2.SDL_GetWindowWMInfo failed: Could not get '
+                          'window subsystem.')
             exit()
         logging.info('- subsystem = {0}'.format(self.info.subsystem))
  
 
     def _getSurfaceExtension(self):
-        '''Get Vulkan surface extension for system's display-server-protocol. '''
+        '''Get Vulkan surface extension for system's display-server-protocol.'''
         if  self.info.subsystem == sdl2.SDL_SYSWM_WINDOWS:
-            logging.info('- subsystem is Microsoft Windows ==> VK_KHR_win32_surface')
+            logging.info('- subsystem is Microsoft Windows ==>'
+                         ' VK_KHR_win32_surface')
             return 'VK_KHR_win32_surface'
         elif self.info.subsystem == sdl2.SDL_SYSWM_X11:
-            logging.info('- subsystem is X Window System ==> VK_KHR_xlib_surface')
+            logging.info('- subsystem is X Window System ==>'
+                        ' VK_KHR_xlib_surface')
             return 'VK_KHR_xlib_surface'
-            #logging.info('- subsystem is X Window System ==> VK_KHR_xcb_surface')
+            #logging.info('- subsystem is X Window System ==>'
+            #              ' VK_KHR_xcb_surface')
             #return 'VK_KHR_xcb_surface'
         elif self.info.subsystem == sdl2.SDL_SYSWM_COCOA:
-            logging.info('- subsystem is Apple Mac OS X ==> VK_MVK_macos_surface')
+            logging.info('- subsystem is Apple Mac OS X ==>'
+                         ' VK_MVK_macos_surface')
             return 'VK_MVK_macos_surface'
         elif self.info.subsystem == sdl2.SDL_SYSWM_UNIKIT:
             logging.info('- subsystem is Apple iOS ==> VK_MVK_ios_surface')
             return 'VK_MVK_ios_surface'
         elif sdl2.SDL_VERSION_ATLEAST(2, 0, 2):
             if self.info.subsystem == sdl2.SDL_SYSWM_WAYLAND:
-                logging.info('- subsystem is Wayland (>= SDL 2.0.2) ==> VK_KHR_wayland_surface')
+                logging.info('- subsystem is Wayland (>= SDL 2.0.2) ==>'
+                             ' VK_KHR_wayland_surface')
                 return 'VK_KHR_wayland_surface'
             elif self.info.subsystem == sdl2.SDL_SYSWM_MIR:
-                logging.info('- subsystem is Mir (>= SDL 2.0.2) ==> VK_KHR_mir_surface')
+                logging.info('- subsystem is Mir (>= SDL 2.0.2) ==>'
+                             ' VK_KHR_mir_surface')
                 return 'VK_KHR_mir_surface'
         elif sdl2.SDL_VERSION_ATLEAST(2, 0, 4):
             if self.info.subsystem == sdl2.SDL_SYSWM_ANDROID:
-                logging.info('- subsystem is Android (>= SDL 2.0.4) ==> VK_KHR_android_surface')
+                logging.info('- subsystem is Android (>= SDL 2.0.4) ==>'
+                             ' VK_KHR_android_surface')
                 return 'VK_KHR_android_surface'
         elif sdl2.SDL_VERSION_ATLEAST(2, 0, 5):
             if self.info.subsystem == sdl2.SDL_SYSWM_VIVANTE:
-                logging.info('- subsystem is Vivante (>= SDL 2.0.5) ==> VK_MN_vi_surface')
+                logging.info('- subsystem is Vivante (>= SDL 2.0.5) ==>'
+                             ' VK_MN_vi_surface')
                 return 'VK_MN_vi_surface'
         else:
             logging.error('Window manager not compatible with SDL2. Exit.')
@@ -178,7 +188,10 @@ def main():
     window = SetWindow(title="Test Window", w=800, h=200)
     print('window.title = ', window.title)
     w,h = window.getWindowSize()
+    print('w, h = ', w, h)
     dw,dh = window.getDrawableSize()
+    print('dw, dh = ', dw, dw)
+    sdl2.SDL_Delay(6000) # in milliseconds
     window.destroy()
 
 if __name__ == '__main__':

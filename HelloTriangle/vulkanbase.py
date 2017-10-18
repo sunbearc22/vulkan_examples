@@ -5,6 +5,7 @@ Module to setup vulkan API.
 
 Classs and Functions:
 - Setup
+
   
 '''
 
@@ -13,17 +14,29 @@ import logging
 import os
 
 from vulkan import *
-import convertstruct as hf
+import vtools as vts
  
 __author__ = 'sunbear.c22'
 __version__ = '0.1.0'
 __license__ = 'MIT'
 
+
+enableValidationLayers = True
+
+
 class Setup(object):
 
-    def __init__(self, window):
+    def __init__(self, window, debug=True):
+
+        if debug:
+            enableValidationLayers = True
+        else:
+            enableValidationLayers = False
+
         self.window = window
-        self.instance_extensions = ['VK_KHR_surface'] #declares the VkSurfaceKHR object, and provides a function for destroying VkSurfaceKHR objects.
+        self.instance_extensions = ['VK_KHR_surface']
+        # declares the VkSurfaceKHR object, and provides a function for 
+        # destroying VkSurfaceKHR objects.
         self.instance_layers = ['VK_LAYER_LUNARG_standard_validation']
         self.instance = None
         self.fnp = {}
@@ -50,7 +63,7 @@ class Setup(object):
         self.command_pool = None
         self.command_buffers = None
         self.semaphore_image_available = None
-        self.semaphore_image_drawn = None
+        self.semaphore_image_drawn = None            
         
         self._createInstance()
         self._getFnp()
@@ -62,7 +75,7 @@ class Setup(object):
         self._getGraphicsPresentQueue()
         self._createSwapChain()
         self._createImageviews()
-        self._renderPass()
+        self._createRenderPass()
         self._createGraphicsPipeline()
         self._createFramebuffers()
         self._createCommandPool()
@@ -89,21 +102,25 @@ class Setup(object):
         #1.Get available instance extensions in Vulkan.
         available_extensions = [e.extensionName for e in
                                 vkEnumerateInstanceExtensionProperties(None)]
-        self._logdebuglist(available_extensions, 'available instance extensions')
+        self._logdebuglist(available_extensions,
+                           'available instance extensions')
 
         #2.Add system's display-server-protocol to required instance extensions
         self.instance_extensions.append(self.window.display_server_protocol)
 
         #3.Check that required instance extensions are available in Vulkan
         if not all(e in available_extensions for e in self.instance_extensions):
-            logging.error('Required instance extensions are not all available in Vulkan')
+            logging.error('Required instance extensions are not all available'
+                          'in Vulkan')
             exit()
         else:
-            logging.info('Set Vulkan Instance Extensions = {0}'.format(self.instance_extensions))
+            logging.info('Set Vulkan Instance Extensions = {0}'.format(
+                self.instance_extensions))
 
 
     def _setInstanceLayers(self):
-        '''Define required Vulkan Layer Extensions to initialise Vulkan Instance.'''
+        '''Define required Vulkan Layer Extensions to initialise Vulkan
+           Instance.'''
 
         #1.List layer extensions available in Vulkan.
         available_layers = [l.layerName for l in
@@ -112,7 +129,8 @@ class Setup(object):
 
         #2.Check that required layer extensions are available in Vulkan.
         if not all(e in available_layers for e in self.instance_layers):
-            logging.error('Required Vulkan layers are not all available in Vulkan')
+            logging.error('Required Vulkan layers are not all available in '
+                          'Vulkan')
             exit()
         else:
             logging.info('Set Vulkan Layer Extensions = {0}'.format(
@@ -126,7 +144,7 @@ class Setup(object):
         self._setInstanceLayers()
 
         appInfo = VkApplicationInfo(
-            sType = VK_STRUCTURE_TYPE_APPLICATION_INFO, #indicates the type of the structure
+            sType = VK_STRUCTURE_TYPE_APPLICATION_INFO, 
             pApplicationName = self.window.title,
             applicationVersion = VK_MAKE_VERSION(1, 0, 0),
             pEngineName = self.window.title, 
@@ -153,7 +171,7 @@ class Setup(object):
 
 
     def _getFnp(self):
-        '''Create a dictionary of function pointers (fnp) to unexposed Vulkan \n
+        '''Create a dictionary of function pointers (fnp) to unexposed Vulkan
            functions that are needed for this class.
            
         Note: A Vulkan instance is need to used this function.
@@ -163,7 +181,8 @@ class Setup(object):
             '''Function to get function pointer to unexposed Vulkan function'''
             try:
                 self.fnp[name] = vkGetInstanceProcAddr(instance, name)
-                #logging.info('Created function pointer self.fnp[{0}]'.format(name))
+                #logging.info('Created function pointer self.fnp[{0}]'.format(
+                #             name))
             except ImportError:
                 logging.error("Can't get function pointer to {}".format(name))
                 exit
@@ -269,7 +288,8 @@ class Setup(object):
 
          Criteria
          1. Larger GPU memory size is better, an indication of a faster GPU.
-         2. Discrete GPU is preferred over Integrated GPU as it is typically faster.
+         2. Discrete GPU is preferred over Integrated GPU as it is typically
+            faster.
          Note: All GPU has a queue family that suuport graphic operation
                (i.e. VkDrawCmd*) so there is not need to search for a physical
                device with VkQueueFlagBits= VK_QUEUE_GRAPHICS_BIT.
@@ -303,12 +323,14 @@ class Setup(object):
             score = 0
 
             #Larger local GPU memory size is faster
-            for memoryHeap in physical_devices_memories[physical_device].memoryHeaps:
+            for memoryHeap in physical_devices_memories[physical_device].\
+                memoryHeaps:
                 heapsize = memoryHeap.size
                 heapflag = memoryHeap.flags
                 if heapflag & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT and \
                    heapsize >> 0:
-                    logging.debug('heapsize MB = {0}'.format(int(heapsize*1.E-6)))
+                    logging.debug('heapsize MB = {0}'.format(
+                        int(heapsize*1.E-6)))
                     score += int(heapsize*1.E-6)
 
             #Discrete GPU is typically faster
@@ -390,15 +412,16 @@ class Setup(object):
         '''Define the device extensions to be used to create the Logical Device.
 
         Notes:
-        - This function ensures the device extension(s) (e.g. swapchain extension)
-          declared in __init__ is availabe, as the device extension(s) will be use 
-          to create the logical device.'''
+        - This function ensures the device extension(s) (e.g. swapchain 
+          extension) declared in __init__ is availabe, as the device 
+          extension(s) will be use to create the logical device.'''
         
         available_logical_device_extensions = vkEnumerateDeviceExtensionProperties(
             physicalDevice=self.physical_device, pLayerName=None)
         extensionsNames = [e.extensionName for e in
                           available_logical_device_extensions]
-        self._logdebuglist(extensionsNames, 'available logical device extension')
+        self._logdebuglist(extensionsNames,
+                           'available logical device extension')
       
         logging.debug('Required {0} logical device extension(s): {1}'.format(
             len(self.logical_device_extensions), self.logical_device_extensions))        
@@ -477,17 +500,17 @@ class Setup(object):
     def _createSwapChain(self):
         '''Create Swapchain object
 
-           - the general purpose of the swapchain is to synchronize the\n
-             presentation of images with the refresh rate of the screen.\n
+           - the general purpose of the swapchain is to synchronize the 
+             presentation of images with the refresh rate of the screen.
 
-           - the swapchain is a list of image buffers that the GPU draws into\n
-             and also uses to present the drawn image to the screen.\n
+           - the swapchain is a list of image buffers that the GPU draws into
+             and also uses to present the drawn image to the screen.
 
-           - to use the swapchain, we need to ensure the Vulkan swapchain \n
-             device extension 'VK_KHR_swapchain' is available as we have to use\n
-             it. Function _setLogicalDeviceExtensions() does this.\n
+           - to use the swapchain, we need to ensure the Vulkan swapchain
+             device extension 'VK_KHR_swapchain' is available as we have to use
+             it. Function _setLogicalDeviceExtensions() does this.
 
-           - next, we have to update the VkSwapchainCreateInfoKHR struture with\n
+           - next, we have to update the VkSwapchainCreateInfoKHR struture with
              appropriate swapchain parameter values.
 
            - To get the best possible swapchain, the following settings have
@@ -527,7 +550,8 @@ class Setup(object):
         # surface. As such, swapchain's imagecount is equal to the surface
         # capabilities minImageCount, which has a value of 2.
         # DEBUG START
-        capabilitiesName = [x for x in hf.convert_to_python(surface_capabilities)]
+        capabilitiesName = [x for x in vts.convert_to_python(
+            surface_capabilities)]
         logging.debug('Surface capabilities are:')
         for x in capabilitiesName:
             y = getattr(surface_capabilities,x)
@@ -580,11 +604,14 @@ class Setup(object):
                 min( surface_capabilities.maxImageExtent.height,
                      surface_capabilities.currentImageExtent.height )
                 )
-        logging.info('Picked surface extent.width = {}'.format(sc_imageExtent.width))
-        logging.info('Picked surface extent.height = {}'.format(sc_imageExtent.height))
+        logging.info('Picked surface extent.width = {}'.format(
+            sc_imageExtent.width))
+        logging.info('Picked surface extent.height = {}'.format(
+            sc_imageExtent.height))
 
         #C3 Set swapchain's preTransform.
-        logging.debug('preTransform VkSurfaceTransformFlagBitsKHR values and meaning.')
+        logging.debug('preTransform VkSurfaceTransformFlagBitsKHR values and'
+                      ' meaning.')
         logging.debug('0x00000002 = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR')
         logging.debug('0x00000002 = VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR')
         logging.debug('0x00000004 = VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR')
@@ -663,7 +690,7 @@ class Setup(object):
         logging.debug('Detected {} surface format combinations:'.format(
             len(surface_formats)))
         for f in surface_formats:
-            for x in hf.convert_to_python(surface_formats):
+            for x in vts.convert_to_python(surface_formats):
                 logging.debug(' .{0} = {1}'.format(x,getattr(f,x)))
         logging.debug('VkColorSpaceKHR values and captions:')
         logging.debug('         0 = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR')
@@ -743,7 +770,8 @@ class Setup(object):
         # 2. If the graphics queue family and the presentation queue family
         #    are different, the VK_SHARING_MODE_CONCURRENT should be used.
         #    It specifies that concurrent access to any range or image 
-        #    subresource of the object from multiple queue families is supported.
+        #    subresource of the object from multiple queue families is
+        #    supported.
         
         sc_imageSharingMode = VK_SHARING_MODE_EXCLUSIVE
         sc_queueFamilyIndexCount = 0
@@ -773,50 +801,52 @@ class Setup(object):
             # is the surface that the swapchain will present images to.
             minImageCount = sc_minImageCount,
             # min. no. of presentable images the application needs
-            #imageFormat = self.swapchain_imageFormat.format,
             imageFormat = surfaceFormat.format,
-            # is a VkFormat that is valid for swapchains on the specified surface.
-            #imageColorSpace = self.swapchain_imageFormat.colorSpace,
+            # is a VkFormat that is valid for swapchains on the specified
+            # surface.
             imageColorSpace = surfaceFormat.colorSpace,
-            # is a VkColorSpaceKHR that is valid for swapchains on the specified surface.
+            # is a VkColorSpaceKHR that is valid for swapchains on the
+            # specified surface.
             imageExtent = sc_imageExtent,
             # is the size (in pixels) of the swapchain.
             imageArrayLayers = 1,
-            # is number of views in a multiview/stereo surface. For non-stereoscopic-3D
-            # applications, this value is 1.
+            # is number of views in a multiview/stereo surface. For
+            # non-stereoscopic-3D applications, this value is 1.
             imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            # is a bitmask of VkImageUsageFlagBits, indicating how the application will
-            # use the swapchain’s presentable images.
+            # is a bitmask of VkImageUsageFlagBits, indicating how the  will
+            # application use the swapchain’s presentable images.
             imageSharingMode = sc_imageSharingMode,
             # is the sharing mode used for the images of the swapchain
             queueFamilyIndexCount = sc_queueFamilyIndexCount,
             # is the number of queue families having access to the images of the
             # swapchain in case imageSharingMode is VK_SHARING_MODE_CONCURRENT.
             pQueueFamilyIndices = sc_pQueueFamilyIndices,
-            # is an array of queue family indices having access to the images of the
-            # swapchain in case imageSharingMode is VK_SHARING_MODE_CONCURRENT.
+            # is an array of queue family indices having access to the images of
+            # the swapchain in case imageSharingMode is
+            # VK_SHARING_MODE_CONCURRENT.
             preTransform = sc_preTransform,
-            # is a bitmask of VkSurfaceTransformFlagBitsKHR, describing the transform,
-            # relative to the presentation engine’s natural orientation, applied to the
-            # image content prior to presentation. If it does not match the
-            # currentTransform value returned by
-            # vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will
-            # transform the image content as part of the presentation operation.
+            # is a bitmask of VkSurfaceTransformFlagBitsKHR, describing the 
+            # transform, relative to the presentation engine’s natural 
+            # orientation, applied to the image content prior to presentation.
+            # If it does not match the currentTransform value returned by
+            # vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine
+            # will transform the image content as part of the presentation
+            # operation.
             compositeAlpha = sc_compositeAlpha,
             # is a bitmask of VkCompositeAlphaFlagBitsKHR, indicating the alpha
-            # compositing mode to use when this surface is composited together with
-            # other surfaces on certain window systems.
+            # compositing mode to use when this surface is composited together
+            # with other surfaces on certain window systems.
             presentMode = sc_presentMode,
-            # is the presentation mode the swapchain will use. A swapchain’s present
-            # mode determines how incoming present requests will be processed and
-            # queued internally.
+            # is the presentation mode the swapchain will use. A swapchain’s 
+            # present mode determines how incoming present requests will be 
+            # present queued internally.
             clipped = VK_TRUE,
             # indicates whether the Vulkan implementation is allowed to discard
-            # rendering operations that affect regions of the surface which are not
-            # visible.
+            # rendering operations that affect regions of the surface which are 
+            # not visible.
             oldSwapchain = VK_NULL_HANDLE
-            # if not VK_NULL_HANDLE, specifies the swapchain that will be replaced by
-            # the new swapchain being created.
+            # if not VK_NULL_HANDLE, specifies the swapchain that will be 
+            # replaced by the new swapchain being created.
             )
 
         #2. Create Swapchain.
@@ -827,16 +857,20 @@ class Setup(object):
         except VkError:
             logging.error('Swapchain failed to create')
 
-        #3. Get Swapchain Images, i.e. an array of presentable images in swapchain.
+        #3. Get Swapchain Images, i.e. an array of presentable images in
+        #   swapchain.
         self.swapchain_images = self.fnp['vkGetSwapchainImagesKHR'](
             self.logical_device, self.swapchain)
         logging.info('Gotten swapchain images.')
 
         self.swapchain_imageFormat = surfaceFormat.format
         self.swapchain_imageExtent = sc_imageExtent
-        logging.info('set swapchain imageFormat: {}'.format(self.swapchain_imageFormat))
-        logging.info('Set swapchain extent.width = {}'.format(self.swapchain_imageExtent.width))
-        logging.info('Set swapchain extent.height = {}'.format(self.swapchain_imageExtent.height))
+        logging.info('set swapchain imageFormat: {}'.format(
+            self.swapchain_imageFormat))
+        logging.info('Set swapchain extent.width = {}'.format(
+            self.swapchain_imageExtent.width))
+        logging.info('Set swapchain extent.height = {}'.format(
+            self.swapchain_imageExtent.height))
 
 
     def _createImageviews(self):
@@ -901,26 +935,28 @@ class Setup(object):
                     vkCreateImageView( self.logical_device, createInfo, None))
                 logging.info('Created Swapchain Image View [{}].'.format(i))
 
-            logging.info('- The image views are now only sufficient to be used ')
-            logging.info("  as textures. To make them as render targets, we need")
-            logging.info("  to first set up the graphics pipeline and framebuffer.") 
+            logging.info('- The image views are now only sufficient to be used')
+            logging.info("  as textures. To make them as render targets, we "
+                         "need")
+            logging.info("  to first set up the graphics pipeline and "
+                         "framebuffer.") 
 
         except VkError:
             logging.error('Swapchain imageview(s) failed to create.')
                 
 
-    def _renderPass(self):
+    def _createRenderPass(self):
         ''' Create Render Pass.
 
         Notes:
-        1. Render pass represents a collection of attachments, subpasses, and\n'
-           dependencies between the subpasses, and describes how the attachments\n
-           are used over the course of the subpasses.'''
+        1. Render pass represents a collection of attachments, subpasses, and
+           dependencies between the subpasses, and describes how the
+           attachments are used over the course of the subpasses.'''
 
         #1. Describe attachment description
         #   - Describes the properties of an attachment including its format,
-        #     sample count, and how its contents are treated at the beginning and
-        #     end of each render pass instance.
+        #     sample count, and how its contents are treated at the beginning
+        #     and end of each render pass instance.
         color_attachement = VkAttachmentDescription(
             flags = 0,
             format = self.swapchain_imageFormat,
@@ -930,7 +966,8 @@ class Setup(object):
             loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             # clear framebuffer to black before draw new frame
             storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            # store operation so that we can see the rendered triangle on the screen
+            # store operation so that we can see the rendered triangle on the
+            # screen
             stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             # means don't care    
             stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -968,42 +1005,46 @@ class Setup(object):
 
         #4. Describe subpass dependency.
         # Subpasses in a render pass automatically take care of image layout
-        # transitions. These transitions are controlled by subpass dependencies, which
-        # specify memory and execution dependencies between subpasses. We have only a
-        # single subpass right now, but the operations right before and right after this
-        # subpass also count as implicit "subpasses".
-        # There are two built-in dependencies that take care of the transition at the
-        # start of the render pass and at the end of the render pass, but the former
-        # does not occur at the right time. It assumes that the transition occurs at the
-        # start of the pipeline, but we haven't acquired the image yet at that point!
-        # There are two ways to deal with this problem. We could change the waitStages
-        # for the imageAvailableSemaphore to VK_PIPELINE_STAGE_TOP_OF_PIPELINE_BIT to
-        # ensure that the render passes don't begin until the image is available, or we
-        # can make the render pass wait for the
-        # VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT stage. I've decided to go with
-        # the second option here, because it's a good excuse to have a look at subpass
-        # dependencies and how they work.
+        # transitions. These transitions are controlled by subpass dependencies,
+        # which specify memory and execution dependencies between subpasses. We
+        # have only a single subpass right now, but the operations right before
+        # and right after this subpass also count as implicit "subpasses".
+        # There are two built-in dependencies that take care of the transition 
+        # at the start of the render pass and at the end of the render pass, but
+        # the former does not occur at the right time. It assumes that the 
+        # transition occurs at the start of the pipeline, but we haven't 
+        # acquired the image yet at that point! There are two ways to deal with
+        # this problem. We could change the waitStages for the 
+        # imageAvailableSemaphore to VK_PIPELINE_STAGE_TOP_OF_PIPELINE_BIT to 
+        # ensure that the render passes don't begin until the image is 
+        # available, or we can make the render pass wait for the 
+        # VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT stage. I've decided to 
+        # go with the second option here, because it's a good excuse to have a
+        # look at subpassdependencies and how they work.
         subpass_dependency = VkSubpassDependency(
             srcSubpass = VK_SUBPASS_EXTERNAL,
             dstSubpass = 0,
-            # above two fields specify the indices of the dependency and the dependent
-            # subpass. The special value VK_SUBPASS_EXTERNAL refers to the implicit
-            # subpass before or after the render pass depending on whether it is
-            # specified in srcSubpass or dstSubpass. The index 0 refers to our subpass,
-            # which is the first and only one. The dstSubpass must always be higher
-            # than srcSubpass to prevent cycles in the dependency graph.
+            # above two fields specify the indices of the dependency and the 
+            # dependent subpass. The special value VK_SUBPASS_EXTERNAL refers
+            # to the implicit subpass before or after the render pass 
+            # depending on whether it is specified in srcSubpass or dstSubpass. 
+            # The index 0 refers to our subpass, which is the first and only 
+            # one. The dstSubpass must always be higher than srcSubpass to
+            # prevent cycles in the dependency graph.
             srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             srcAccessMask = 0,
-            # above two fields specify the operations to wait on and the stages in which
-            # these operations occur. We need to wait for the swap chain to finish
-            # reading from the image before we can access it. This can be accomplished
-            # by waiting on the color attachment output stage itself.  
+            # above two fields specify the operations to wait on and the stages
+            # in which these operations occur. We need to wait for the swapchain
+            # to finish reading from the image before we can access it. This can
+            # be accomplished by waiting on the color attachment output stage
+            # itself.
             dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            # The operations that should wait on this are in the color attachment stage
-            # and involve the reading and writing of the color attachment. These
-            # settings will prevent the transition from happening until it's actually
-            # necessary (and allowed): when we want to start writing colors to it.
+            # The operations that should wait on this are in the color 
+            # attachment stage and involve the reading and writing of the color
+            # attachment. These settings will prevent the transition from 
+            # happening until it's actually necessary (and allowed): when we
+            # want to start writing colors to it.
             dependencyFlags = 0)
         logging.info('Created render pass subpass dependency.')
 
@@ -1061,7 +1102,8 @@ class Setup(object):
             frag_shader_spirv = f.read()
 
         #3. CreateInfo on Vertex and Fragment Shader Modules.
-        ''' These modules are simply wrappers around the Spir-V bytecode buffers.'''
+        ''' These modules are simply wrappers around the Spir-V bytecode
+            buffers.'''
         vert_shader_module = self._ShaderModuleCreateInfo(vert_shader_spirv,
                                                           'vertex')
         frag_shader_module = self._ShaderModuleCreateInfo(frag_shader_spirv,
@@ -1124,8 +1166,8 @@ class Setup(object):
             primitiveRestartEnable = VK_FALSE)
 
         #7. - A viewport describes the region of the framebuffer that the output
-        #     will be rendered to. Here, the viewport size equals swapchain image
-        #     extent size.
+        #     will be rendered to. Here, the viewport size equals swapchain 
+        #     image extent size.
         #   - A scissor rectangle definse in which regions pixels will actually 
         #     be stored. Any pixels outside the scissor rectangles will be 
         #     discarded by the rasterizer. They function like a filter.
@@ -1151,10 +1193,11 @@ class Setup(object):
             pScissors=[scissor] )
 
         #8. - The rasterizer takes the geometry that is shaped by the vertices
-        #     from the vertex shader and turns it into fragments to be colored by
-        #     the fragment shader. It also performs depth testing, face culling
-        #     and the scissor test, and it can be configured to output fragments
-        #     that fill entire polygons or just the edges (wireframe rendering).
+        #     from the vertex shader and turns it into fragments to be colored 
+        #     by the fragment shader. It also performs depth testing, face 
+        #     culling and the scissor test, and it can be configured to output
+        #     fragments that fill entire polygons or just the edges (wireframe
+        #     rendering).
         rasterizer = VkPipelineRasterizationStateCreateInfo(
             sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
             flags = 0,
@@ -1220,8 +1263,8 @@ class Setup(object):
             blendConstants = [0, 0, 0, 0])
 
         #11. Dynamic states
-        #    - to dynamically change the size of the viewport, line width and blend
-        #      constants w/o having to create a new pipelines
+        #    - to dynamically change the size of the viewport, line width and 
+        #      blend constants w/o having to create a new pipelines
         #    - use VkPipelineDynamicStateCreateInfo, or
         #    - use VkPushConstantRange
         push_constant_ranges = VkPushConstantRange(
@@ -1374,7 +1417,8 @@ class Setup(object):
                                         extent = self.swapchain_imageExtent )
                 # - defines where shader loads and stores will take place.
                 #   The pixels outside this region will have undefined values.
-                #   It should match the size of the attachments for best performance.
+                #   It should match the size of the attachments for best
+                #   performance.
 
                 color = VkClearColorValue( float32 = [0., 0., 0., 1.0] )
                 clear_value = VkClearValue( color = color )
@@ -1395,9 +1439,10 @@ class Setup(object):
                 # start render pass
                 vkCmdBeginRenderPass( command_buffer,
                                       render_pass_begin_create,
-                                      VK_SUBPASS_CONTENTS_INLINE ) # see below comment
-                # The render pass commands will be embedded in the primary command buffer
-                # itself and no secondary command buffers will be executed.
+                                      VK_SUBPASS_CONTENTS_INLINE ) # see below
+                # The render pass commands will be embedded in the primary 
+                # command buffer itself and no secondary command buffers will be
+                # executed.
 
                 # Bind graphics pipeline
                 vkCmdBindPipeline(command_buffer,
@@ -1408,10 +1453,10 @@ class Setup(object):
                 vkCmdDraw( command_buffer, 3, 1, 0, 0 )
                 #vertexCount: Even though we don't have a vertex buffer, we
                 #             technically still have 3 vertices to draw.
-                #instanceCount: Used for instanced rendering, use 1 if you're not
-                #               doing that.
-                #firstVertex: Used as an offset into the vertex buffer, defines the
-                #             lowest value of gl_VertexIndex.
+                #instanceCount: Used for instanced rendering, use 1 if you're 
+                #               not doing that.
+                #firstVertex: Used as an offset into the vertex buffer, defines
+                #              the lowest value of gl_VertexIndex.
                 #firstInstance: Used as an offset for instanced rendering, defines
                 #               the lowest value of gl_InstanceIndex.
 
@@ -1438,10 +1483,10 @@ class Setup(object):
             sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO)
 
         self.semaphore_image_available = vkCreateSemaphore( self.logical_device,
-                                                            createInfo, None)
+                                                            createInfo, None )
 
         self.semaphore_image_drawn = vkCreateSemaphore( self.logical_device,
-                                                          createInfo, None)
+                                                          createInfo, None )
 
         logging.info('Created Semaphore for image_available.')
         logging.info('Created Semaphore for image_drawn.')
@@ -1454,6 +1499,12 @@ class Setup(object):
         image_index = self.fnp['vkAcquireNextImageKHR'](
             self.logical_device, self.swapchain, UINT64_MAX,
             self.semaphore_image_available, VK_NULL_HANDLE )
+        # Notes:-timeout=UINT64_MAX means this function will not return until
+        #        an image is acquired from the presentation engine.
+        #       -Other values for timeout will cause the function to return when
+        #        an image becomes available, or when the specified number of
+        #        nanoseconds have passed (in which case it will return
+        #        VK_TIMEOUT). 
             
         #2. Create info to submit command buffer to queue')
         wait_semaphores = [self.semaphore_image_available]
@@ -1480,7 +1531,7 @@ class Setup(object):
         #3. Submit command buffer to queue
         vkQueueSubmit(self.graphics_queue, 1, submitInfo, None)
 
-        #4. Setup Subpass Dependencies, see Section 8.4')
+        #4. Setup Subpass Dependencies, see function _createRenderPass() Sect.4
 
         #5 Create info to present command buffer result in swapchain')
         #  The last step of drawing a frame is submitting the result back to the
@@ -1491,14 +1542,14 @@ class Setup(object):
             sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             waitSemaphoreCount = 1,
             pWaitSemaphores = signal_semaphores,
-            # above two parameters specify which semaphores to wait on before presentation
-            # can happen, just like VkSubmitInfo.
+            # above two parameters specify which semaphores to wait on before 
+            # presentation can happen, just like VkSubmitInfo.
             swapchainCount = 1,
             pSwapchains = [self.swapchain],
             pImageIndices = [image_index],
-            # next two parameters specify the swapchains to present images to and the
-            # index of the image for each swap chain. This will almost always be a
-            # single one.
+            # next two parameters specify the swapchains to present images to 
+            # and the index of the image for each swap chain. This will almost 
+            # always be a single one.
             pResults = None) # Optional
 
         #6. Submit request to present command buffer result in swapchain')
@@ -1509,11 +1560,13 @@ class Setup(object):
         '''Destroy Vulkan Object and it's children objects.'''
         
         if self.semaphore_image_drawn:
-            vkDestroySemaphore(self.logical_device, self.semaphore_image_drawn, None)
+            vkDestroySemaphore(self.logical_device, self.semaphore_image_drawn,
+                               None)
             logging.info('Destroyed Vulkan Semaphore for image_drawn.')
 
         if self.semaphore_image_available:
-            vkDestroySemaphore(self.logical_device, self.semaphore_image_available, None)
+            vkDestroySemaphore(self.logical_device,
+                               self.semaphore_image_available, None)
             logging.info('Destroyed Vulkan Semaphore for image_available.')
 
         if self.command_pool:
@@ -1531,7 +1584,8 @@ class Setup(object):
             logging.info('Destroyed Vulkan Graphics Pipeline.')
 
         if self.pipeline_layout:
-            vkDestroyPipelineLayout(self.logical_device, self.pipeline_layout, None)
+            vkDestroyPipelineLayout(self.logical_device, self.pipeline_layout,
+                                    None)
             logging.info('Destroyed Vulkan Pipeline Layout.')
 
         if self.render_pass:
@@ -1545,12 +1599,13 @@ class Setup(object):
             logging.info('Destroyed Vulkan Swapchain ImageViews.')
 
         if self.swapchain:
-            self.fnp['vkDestroySwapchainKHR'](self.logical_device, self.swapchain, None)
+            self.fnp['vkDestroySwapchainKHR'](self.logical_device,
+                                              self.swapchain, None)
             logging.info('Destroyed Vulkan Swapchain.')
 
         vkDeviceWaitIdle(self.logical_device)
-        logging.info('All outstanding queue operations for all queues in Logical'
-                     ' Device have ceased.')
+        logging.info('All outstanding queue operations for all queues in '
+                     'Logical Device have ceased.')
         if self.logical_device:
             vkDestroyDevice(self.logical_device, None)
             logging.info('Destroyed Vulkan Logical Device.')

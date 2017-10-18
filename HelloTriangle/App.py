@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """
-vulkan app to draw a 2D HelloTriangle.
+vulkan app to draw a 3D image
 """
 __author__ = 'sunbearc22'
 __version__ = "0.1.0"
@@ -42,7 +42,7 @@ class VulkanApp(object):
         self.vulkan_window = sw.SetWindow(title=TITLE, w=WIDTH, h=HEIGHT)
 
     def _initVulkan(self, window):
-        self.vulkan_base = vb.Setup(window)
+        self.vulkan_base = vb.Setup(window, debug=True)
         print("self.vulkan_base =", self.vulkan_base)
 
     def _mainLoop(self):
@@ -52,13 +52,16 @@ class VulkanApp(object):
         while running:
             events = sw.sdl2.ext.get_events()
             self.vulkan_base._drawFrame()
+
             for event in events:
+
                 if event.type == sw.sdl2.SDL_QUIT:
-                    logging.info('Exit event triggered: Leaving Draw Loop.')
                     running = False
+                    logging.info('Leaving Draw Loop: sdl2 event was detected.')
+                    
                     vkDeviceWaitIdle( self.vulkan_base.logical_device )
-                    logging.info('All outstanding queue operations for all'
-                                 ' queues in Logical Device have ceased.')
+                    logging.info('Checked all outstanding queue operations for'
+                                 ' all queues in Logical Device have ceased.')
                     break
 
 def main():

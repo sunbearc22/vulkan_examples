@@ -23,8 +23,6 @@ import ctypes
 import sdl2
 import sdl2.ext
 
-#RESOURCES = sdl2.ext.Resources(__file__, "resources")
-
 #LOGFORMAT = '%(asctime)s [%(process)d] %(name)s %(module)s.%(funcName)-33s +%(lineno)-5s: %(levelname)-8s %(message)s'
 LOGFORMAT = '%(asctime)s %(module)-15s.%(funcName)-30s +%(lineno)-5s: %(levelname)-8s %(message)s'
 logging.basicConfig(level=logging.DEBUG, format=LOGFORMAT)
@@ -209,9 +207,27 @@ def main():
     window = SetWindow(title="Test Window - Resizable", w=800, h=200,
                        flags=vflags)
     print('window.title = ', window.title)
-    w,h = window.getWindowSize()
-    dw,dh = window.getDrawableSize()
-    sdl2.SDL_Delay(6000) # in milliseconds
+
+    # Main loop
+    running = True
+    logging.info('Executing SDL2 Main Loop.')
+
+    while running:
+        #Check for any events that piled up since the last check.
+        events = sdl2.ext.get_events()
+            
+        for event in events:
+            if event.type == sdl2.SDL_QUIT:
+                logging.info('Leaving SDL2 Main Loop: sdl2.SDL_QUIT.')
+                running = False
+                break
+
+            if event.type == sdl2.SDL_WINDOWEVENT_SIZE_CHANGED:
+                newWidth, newHeight = self.vulkan_window.getWindowSize() 
+                print('Window new width and height = {0} , {1}'.format(
+                    newWidth, newHeight) )
+                break
+
     window.destroy()
 
 if __name__ == '__main__':

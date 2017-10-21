@@ -2,6 +2,11 @@
 
 """
 vulkan app to draw a 3D image
+
+Amended on: 2017-10-21
+Amendments: 1. Corrected py-sdl2 implementation of a resizable window.
+            2. Require class VulkanApp to have the d"debug" keyword.  
+
 """
 __author__ = 'sunbearc22'
 __version__ = "0.1.0"
@@ -60,6 +65,7 @@ class VulkanApp(object):
         running = True
         event = sdl2.SDL_Event()
         logging.info('SDL2 Main Loop: Executing.')
+        #sdl2.SDL_ShowWindow(self.vulkan_window)
 
         while running:
             # Poll sdl2 window for currently pending events.
@@ -76,7 +82,7 @@ class VulkanApp(object):
                        self.vulkan_base._recreateSwapChain()
                        break
 
-            # Renderer: Get vulkan to draw into sdl2 window
+            # Renderer: Present Vulkan images onto sdl2 window.
             self.vulkan_base._drawFrame() 
 
 
@@ -88,7 +94,7 @@ class VulkanApp(object):
 
 def main():
     app = VulkanApp(debug=True)
-    app.vulkan_base.cleanup()
+    app.vulkan_base.cleanup1()
     app.vulkan_window.destroy()
     
 

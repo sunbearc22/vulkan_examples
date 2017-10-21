@@ -3,8 +3,11 @@
 '''
 Module to setup vulkan API.
 
-Amended on: 2017-10-17
-Amendments: 1. Introduced logic for debugging and associated callback functions.  
+Amended on: 2017-10-21
+Amendments: 1. Revised v2 codes to now allow resizing of window according to
+               Vulkan Tutorial.
+            2. Removed Vulkan struct's stype, flag, and other parameters with 
+               the "Count" word in their name.
 '''
 
 # Python3 modules
@@ -135,7 +138,6 @@ class Setup(object):
         '''Create Vulkan Instance for Vulkan App.'''
 
         appInfo = VkApplicationInfo(
-            sType = VK_STRUCTURE_TYPE_APPLICATION_INFO, #indicates the type of the structure
             pApplicationName = self.window.title,
             applicationVersion = VK_MAKE_VERSION(1, 0, 0),
             pEngineName = self.window.title, 
@@ -148,23 +150,15 @@ class Setup(object):
 
         if self.debug and layersChecked:
             createInfo = VkInstanceCreateInfo(
-                sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                flags = 0,
                 pApplicationInfo = appInfo,
-                enabledLayerCount = len(self.instance_layers),
                 ppEnabledLayerNames = self.instance_layers,
-                enabledExtensionCount = len(self.instance_extensions),
                 ppEnabledExtensionNames = self.instance_extensions )
             logging.info('Created Vulkan Instance Create Info with Layers {}'\
                           .format(self.instance_layers))
         else:
             createInfo = VkInstanceCreateInfo(
-                sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                flags = 0,
                 pApplicationInfo = appInfo,
-                enabledLayerCount = 0,
                 ppEnabledLayerNames = None,
-                enabledExtensionCount = len(self.instance_extensions),
                 ppEnabledExtensionNames = self.instance_extensions )
             logging.info('Created Vulkan Instance Create Info w/o Layers')
            
@@ -224,7 +218,6 @@ class Setup(object):
 
         # Debug mode on
         createInfo = VkDebugReportCallbackCreateInfoEXT(
-            sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
             #flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT,
             flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
             pfnCallback = self._debugCallback )
@@ -271,8 +264,6 @@ class Setup(object):
         def _surface_xlib():
             logging.info('Created Xlib surface function.')
             surface_createInfo = VkXlibSurfaceCreateInfoKHR(
-                sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
-                flags = 0,
                 dpy = info.info.x11.display,
                 window = info.info.x11.window)
             return create_surface('vkCreateXlibSurfaceKHR', surface_createInfo)
@@ -280,8 +271,6 @@ class Setup(object):
         def _surface_xcb():
             logging.info('Created Xcb surface function')
             surface_createInfo = VkXcbSurfaceCreateInfoKHR(
-                sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
-                flags = 0,
                 connection = info.info.x11.display,
                 window = info.info.x11.window)
             return create_surface('vkCreateXcbSurfaceKHR', surface_createInfo)
@@ -289,8 +278,6 @@ class Setup(object):
         def _surface_wayland():
             logging.info('Created Wayland surface function')
             surface_createInfo = VkWaylandSurfaceCreateInfoKHR(
-                sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
-                flags = 0,
                 display = info.info.wl.display,
                 surface = info.info.surface)
             return create_surface('vkCreateWaylandSurfaceKHR',
@@ -299,8 +286,6 @@ class Setup(object):
         def _surface_mir():
             logging.info('Created Mir surface function')
             surface_createInfo = VkMirSurfaceCreateInfoKHR(
-                sType = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR,
-                flags = 0,
                 connection = info.info.mir.connection,
                 mirSurface = info.info.mir.surface)
             return create_surface('vkCreateMirSurfaceKHR', surface_createInfo)
@@ -308,8 +293,6 @@ class Setup(object):
         def _surface_win32():
             logging.info('Created Win32 surface function')
             surface_createInfo = VkWin32SurfaceCreateInfoKHR(
-                sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-                flags = 0,
                 hinstance = info.win.hinstance,
                 hwdn = info.info.win.window)
             return create_surface('vkCreateWin32SurfaceKHR', surface_createInfo)
@@ -493,8 +476,6 @@ class Setup(object):
         # Note: queue_family_indices is a set; when it's items value are equal,
         #       set keeps only one of them. 
         logical_device_queues_createInfo = [ VkDeviceQueueCreateInfo(
-            sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            flags = 0,
             queueFamilyIndex = i,
             queueCount = 1,
             pQueuePriorities = queue_priorities)
@@ -503,13 +484,9 @@ class Setup(object):
         
         #2. Create Logical Device Create Info.
         logical_device_createInfo = VkDeviceCreateInfo(
-            sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            flags = 0,
             queueCreateInfoCount = len(logical_device_queues_createInfo),
             pQueueCreateInfos = logical_device_queues_createInfo,
-            enabledLayerCount = len(self.logical_device_layers), # Note: device_layers == instance_layer
             ppEnabledLayerNames = self.logical_device_layers,    # Note: device_layers == instance_layer
-            enabledExtensionCount = len(self.logical_device_extensions), # Note: self.device_extensions != instance_extensions
             ppEnabledExtensionNames = self.logical_device_extensions,    # Note: self.device_extensions != instance_extensions
             pEnabledFeatures = self.physical_device_features )
         logging.info('Created logical_device_createInfo.')
@@ -614,7 +591,6 @@ class Setup(object):
         nw, nh = self.window.getWindowSize()
         newWidth = nw.value
         newHeight = nh.value
-        print( 'newWidth, newHeight = {0} {1}'.format(newWidth, newHeight) )
         uint32_max = 0xFFFFFFFF
 
         if surface_capabilities.currentExtent.width != uint32_max:
@@ -741,9 +717,6 @@ class Setup(object):
 
         #1. Create VkSwapchainCreateInfoKHR.
         createInfo = VkSwapchainCreateInfoKHR (
-            sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            pNext = None,
-            flags = 0,
             surface = self.surface,
             # is the surface that the swapchain will present images to.
             minImageCount = sc_minImageCount,
@@ -856,9 +829,6 @@ class Setup(object):
 
                 # Create swapchain imageview createInfo
                 createInfo = VkImageViewCreateInfo(
-                    sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                    pNext = None,
-                    flags = 0,
                     image = image,
                     # the current VkImage on which the view will be created.
                     viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -890,7 +860,6 @@ class Setup(object):
         #     sample count, and how its contents are treated at the beginning and
         #     end of each render pass instance.
         color_attachement = VkAttachmentDescription(
-            flags = 0,
             format = self.swapchain_imageFormat,
             # format match swapchain images format
             samples = VK_SAMPLE_COUNT_1_BIT,
@@ -919,7 +888,6 @@ class Setup(object):
 
         #3. Describe subpass.
         subpass = VkSubpassDescription(
-            flags = 0,
             pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
             # explicitly declare this is a graphic pipeline
             inputAttachmentCount = 0,
@@ -973,8 +941,6 @@ class Setup(object):
 
         #5. Create render pass createinfo.')
         render_pass_createInfo = VkRenderPassCreateInfo(
-            flags=0,
-            sType=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             attachmentCount=1,
             pAttachments=[color_attachement],
             subpassCount=1,
@@ -993,8 +959,6 @@ class Setup(object):
 
     def _ShaderModuleCreateInfo(self, shader, shadertype):
         shader_module_createInfo = VkShaderModuleCreateInfo(
-            sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            flags = 0,
             codeSize = len(shader),
             pCode = shader)
         return shader_module_createInfo
@@ -1041,18 +1005,12 @@ class Setup(object):
 
         #4. Create the info to create the Vertex and Fragment shader stages.
         vert_shader_stage = VkPipelineShaderStageCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            pNext = None,
-            flags = 0,
             stage = VK_SHADER_STAGE_VERTEX_BIT,
             module = vert_shader_module,
             pName = 'main',
             pSpecializationInfo = None)
 
         frag_shader_stage = VkPipelineShaderStageCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            pNext = None,
-            flags = 0,
             stage = VK_SHADER_STAGE_FRAGMENT_BIT,
             module = frag_shader_module,
             pName = 'main',
@@ -1068,8 +1026,6 @@ class Setup(object):
         #   in the vertex shader, we have no vertex data to load so parameters
         #   with "Count" has zero value.
         vertex_input = VkPipelineVertexInputStateCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            flags = 0,
             vertexBindingDescriptionCount = 0,
             pVertexBindingDescriptions = None, # optional
             vertexAttributeDescriptionCount = 0,
@@ -1078,8 +1034,6 @@ class Setup(object):
         #6. Describe what kind of geometry will be drawn from the vertices and
         #   if primitive restart should be enabled.
         input_assembly = VkPipelineInputAssemblyStateCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            flags = 0,
             topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             primitiveRestartEnable = VK_FALSE)
 
@@ -1103,8 +1057,6 @@ class Setup(object):
                             extent = self.swapchain_imageExtent )
 
         viewport_state = VkPipelineViewportStateCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            flags = 0,
             viewportCount = 1,
             pViewports = [viewport],
             scissorCount = 1,
@@ -1116,8 +1068,6 @@ class Setup(object):
         #     and the scissor test, and it can be configured to output fragments
         #     that fill entire polygons or just the edges (wireframe rendering).
         rasterizer = VkPipelineRasterizationStateCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-            flags = 0,
             depthClampEnable = VK_FALSE,
             rasterizerDiscardEnable = VK_FALSE,
             polygonMode = VK_POLYGON_MODE_FILL,
@@ -1138,8 +1088,6 @@ class Setup(object):
         #   simply rendering to a higher resolution and then downscaling.
         #   Enabling it requires enabling a GPU feature. Not used here.
         multisample = VkPipelineMultisampleStateCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            flags = 0,
             sampleShadingEnable = VK_FALSE,
             rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
             minSampleShading = 1,
@@ -1171,8 +1119,6 @@ class Setup(object):
             alphaBlendOp = VK_BLEND_OP_ADD)
 
         color_blend = VkPipelineColorBlendStateCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-            flags = 0,
             logicOpEnable = VK_FALSE,
             logicOp = VK_LOGIC_OP_COPY,
             attachmentCount = 1,
@@ -1191,8 +1137,6 @@ class Setup(object):
 
         #12. Create Pipeline Layout Create Info
         pipeline_layout_createInfo = VkPipelineLayoutCreateInfo(
-            sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            flags = 0,
             setLayoutCount = 0,
             pSetLayouts = None,
             pushConstantRangeCount = 0,
@@ -1208,8 +1152,6 @@ class Setup(object):
 
         #14. Create Pipeline CreateInfo
         pipeline_createInfo = VkGraphicsPipelineCreateInfo(
-            sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            flags = 0,
             stageCount = 2,
             pStages = pipeline_shader_stages,
             pVertexInputState = vertex_input,
@@ -1233,8 +1175,8 @@ class Setup(object):
                 self.logical_device, None, 1, [pipeline_createInfo], None)
             logging.info('Created graphics pipeline.')
         except VkError:
-                logging.error('Graphics pipeline failed to create.')
-                exit()
+            logging.error('Graphics pipeline failed to create.')
+            exit()
                     
         #16. Destroy Vertex and Fragment Shader Modules.
         vkDestroyShaderModule(self.logical_device, frag_shader_module, None)
@@ -1255,8 +1197,6 @@ class Setup(object):
                 attachments = [imageview] 
 
                 createInfo = VkFramebufferCreateInfo(
-                    sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                    flags = 0,
                     renderPass = self.render_pass,
                     attachmentCount = len(attachments),
                     pAttachments = attachments,
@@ -1270,8 +1210,8 @@ class Setup(object):
                 len(self.swapchain_framebuffers)))
 
         except VkError:
-                logging.error('Swapchain framebuffers failed to create.')
-                exit()
+            logging.error('Swapchain framebuffers failed to create.')
+            exit()
 
 
     def _createCommandPool(self):
@@ -1281,8 +1221,6 @@ class Setup(object):
         #  program and then execute them many times in the main loop, so no
         #  flags has to be declared.
         createInfo = VkCommandPoolCreateInfo(
-            sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            flags = 0, # Optional
             queueFamilyIndex = self.queue_families_graphics_index)
 
         try: 
@@ -1302,7 +1240,6 @@ class Setup(object):
         
         # Create command buffer
         allocateInfo = VkCommandBufferAllocateInfo(
-            sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             commandPool = self.command_pool,
             level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             commandBufferCount = len(self.swapchain_framebuffers))
@@ -1320,7 +1257,6 @@ class Setup(object):
         try:
             for i, command_buffer in enumerate(self.command_buffers):
                 command_buffer_begin_createInfo = VkCommandBufferBeginInfo(
-                    sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                     flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
                     #specifies how we're going to use the command buffer.
                     pInheritanceInfo = None
@@ -1346,7 +1282,6 @@ class Setup(object):
                 #   where each is an unsigned normalized value (0. to 1.)
 
                 render_pass_begin_createInfo = VkRenderPassBeginInfo(
-                    sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                     renderPass = self.render_pass,
                     renderArea = render_area,
                     framebuffer = self.swapchain_framebuffers[i],
@@ -1395,14 +1330,11 @@ class Setup(object):
         ready for drawing, and another semaphore to signal that drawing has
         finished and presentation can happen.'''
         
-        createInfo = VkSemaphoreCreateInfo(
-            sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO)
-
-        self.semaphore_image_available = vkCreateSemaphore( self.logical_device,
-                                                            createInfo, None)
-
-        self.semaphore_image_drawn = vkCreateSemaphore( self.logical_device,
-                                                          createInfo, None)
+        createInfo = VkSemaphoreCreateInfo()
+        self.semaphore_image_available = vkCreateSemaphore(
+            self.logical_device, createInfo, None)
+        self.semaphore_image_drawn = vkCreateSemaphore(
+            self.logical_device, createInfo, None)
 
         logging.info('Created Semaphore for image_available.')
         logging.info('Created Semaphore for image_drawn.')
@@ -1410,50 +1342,50 @@ class Setup(object):
 
     def _drawFrame(self):
         
-        # Added:
-        # - Check for swapchain image out-of-date condition - due to resizing of
-        #   window.
-        # - VK_ERROR_OUT_OF_DATE_KHR:
-        #    the swapchain has become incompatible with the surface and can no
-        #    longer be used for drawing.
-        # - VK_SUBOPTIMAL_KHR:
-        #    The swapchain can still be used to successfully present to the 
-        #    surface, but the surface properties are no longer matched exactly. 
-        #    For example, the platform may be simply resizing the image to fit 
-        #    the window now.    
+        #REVISED:
+        #- Check for swapchain image out-of-date condition - due to resizing of
+        #  window.
+        #- VK_ERROR_OUT_OF_DATE_KHR:
+        #  the swapchain has become incompatible with the surface and can no
+        #  longer be used for drawing.
+        #- VK_SUBOPTIMAL_KHR:
+        #  The swapchain can still be used to successfully present to the 
+        #  surface, but the surface properties are no longer matched exactly. 
+        #  For example, the platform may be simply resizing the image to fit 
+        #  the window now.    
         try:
-        #1. Acquire an available presentable image from swapchain to use, and 
-        #   retrieve the index of that image
+            #1. Acquire an available presentable image from swapchain to use,
+            #   and retrieve the index of that image
             image_index = self.fnp['vkAcquireNextImageKHR'](
                 self.logical_device, self.swapchain, UINT64_MAX,
                 self.semaphore_image_available, VK_NULL_HANDLE )
-        # Notes:-timeout=UINT64_MAX means this function will not return until
-        #        an image is acquired from the presentation engine.
-        #       -Other values for timeout will cause the function to return when
-        #        an image becomes available, or when the specified number of
-        #        nanoseconds have passed (in which case it will return
-        #        VK_TIMEOUT). 
+                # Notes:
+                #-timeout=UINT64_MAX means this function will not return until
+                # an image is acquired from the presentation engine.
+                #-Other values for timeout will cause the function to return 
+                # when an image becomes available, or when the specified number
+                # of nanoseconds have passed (in which case it will return
+                # VK_TIMEOUT). 
         except VK_ERROR_OUT_OF_DATE_KHR:
             logging.info(
                 "Acquired swapchain image is out-of-date. Recreate Swapchain!")
             self._recreateSwapChain()
         except VK_SUBOPTIMAL_KHR:
-                logging.info("Acquired swapchain image is sub-optimal. Still "
-                             "can be used.")
+                logging.info(
+                    "Acquired swapchain image is sub-optimal but can be used.")
         except VkError as e:
-            print('VkError: {}'.format(e))
-            print("Failed to acquire swapchain image!")
+            logging.error('VkError: {}'.format(e))
+            logging.error("Failed to acquire swapchain image!")
         except VkException as e:
-            print('VkException: {}'.format(e))
-            print("Failed to acquire swapchain image!")
+            logging.error('VkException: {}'.format(e))
+            logging.error("Failed to acquire swapchain image!")
 
         #2. Create info to submit command buffer to queue')
         wait_semaphores = [self.semaphore_image_available]
         wait_stages = [VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT]
         signal_semaphores = [self.semaphore_image_drawn]
         submitInfo = VkSubmitInfo(
-            sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            waitSemaphoreCount = 1,
+            waitSemaphoreCount = len(wait_semaphores),
             pWaitSemaphores = wait_semaphores,
             pWaitDstStageMask = wait_stages,
             #- specify which semaphores to wait on before execution begins and
@@ -1463,7 +1395,7 @@ class Setup(object):
             #- specify which command buffers to actually submit for execution.
             #  As mentioned earlier, we should submit the command buffer that 
             #  binds the swap chain image we just acquired as color attachment.
-            signalSemaphoreCount = 1,
+            signalSemaphoreCount = len(signal_semaphores),
             pSignalSemaphores = signal_semaphores)
             #- specify which semaphores to signal once the command buffer(s)
             #   have finished execution. In our case we're using the 
@@ -1480,23 +1412,22 @@ class Setup(object):
         #  is configured through a VkPresentInfoKHR structure at the end of the
         #  drawFrame function.
         presentInfo = VkPresentInfoKHR(
-            sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            waitSemaphoreCount = 1,
+            waitSemaphoreCount = len(signal_semaphores),
             pWaitSemaphores = signal_semaphores,
-            # above two parameters specify which semaphores to wait on before presentation
-            # can happen, just like VkSubmitInfo.
+            # above two parameters specify which semaphores to wait on before
+            #  presentation can happen, just like VkSubmitInfo.
             swapchainCount = 1,
             pSwapchains = [self.swapchain],
-            pImageIndices = [image_index])
-            # next two parameters specify the swapchains to present images to and the
-            # index of the image for each swap chain. This will almost always be a
-            # single one.
-            #pResults = None) # Optional
+            pImageIndices = [image_index],
+            # next two parameters specify the swapchains to present images to and 
+            # the index of the image for each swap chain. This will almost always
+            # be a single one.
+            pResults = None) # Optional
 
         #6. Queue an image for presentation after queueing all rendering commands
         #   and transitioning the image to the correct layout
-        # Added: Check if image_index state is out of date due to resizing of
-        #        window (same as 'vkAcquireNextImageKHR'.
+        #   Added: Check if image_index state is out of date due to resizing of
+        #          window (same as 'vkAcquireNextImageKHR'.
         try:
             self.fnp['vkQueuePresentKHR'](self.present_queue, presentInfo)
         except VK_ERROR_OUT_OF_DATE_KHR:
@@ -1519,81 +1450,13 @@ class Setup(object):
         vkQueueWaitIdle(self.present_queue)
 
 
-    def cleanup(self):
-        '''Destroy Vulkan Object and All it's children objects.'''
-        
-        print('========= Function _cleanup() Activated ==============')
-
-        if self.semaphore_image_drawn:
-            vkDestroySemaphore( self.logical_device,
-                                self.semaphore_image_drawn, None )
-            logging.info('Destroyed Vulkan Semaphore for image_drawn.')
-
-        if self.semaphore_image_available:
-            vkDestroySemaphore( self.logical_device,
-                                self.semaphore_image_available, None )
-            logging.info('Destroyed Vulkan Semaphore for image_available.')
-
-        if self.command_pool:
-            vkDestroyCommandPool( self.logical_device, self.command_pool, None )
-            logging.info('Destroyed Vulkan Command Pool.')
-
-        if self.swapchain_framebuffers:
-            for f in self.swapchain_framebuffers:
-                vkDestroyFramebuffer( self.logical_device, f, None )
-            self.swapchain_framebuffers = []
-            logging.info('Destroyed Vulkan Framebuffers.')
-
-        if self.graphics_pipeline:
-            vkDestroyPipeline( self.logical_device,
-                               self.graphics_pipeline, None )
-            logging.info('Destroyed Vulkan Graphics Pipeline.')
-
-        if self.pipeline_layout:
-            vkDestroyPipelineLayout( self.logical_device,
-                                     self.pipeline_layout, None )
-            logging.info('Destroyed Vulkan Pipeline Layout.')
-
-        if self.render_pass:
-            vkDestroyRenderPass( self.logical_device, self.render_pass, None )
-            logging.info('Destroyed Vulkan Render Pass.')
-
-        if self.swapchain_imageViews:
-            for i in self.swapchain_imageViews:
-                vkDestroyImageView( self.logical_device, i, None )
-            self.swapchain_imageViews = []
-            logging.info('Destroyed Vulkan Swapchain ImageViews.')
-
-        if self.swapchain:
-            self.fnp['vkDestroySwapchainKHR']( self.logical_device,
-                                               self.swapchain, None )
-            logging.info('Destroyed Vulkan Swapchain.')
-
-        vkDeviceWaitIdle(self.logical_device)
-        logging.info('All outstanding queue operations for all queues in Logical'
-                     ' Device have ceased.')
-        if self.logical_device:
-            vkDestroyDevice( self.logical_device, None )
-            logging.info('Destroyed Vulkan Logical Device.')
-
-        if self.surface:
-            self.fnp['vkDestroySurfaceKHR']( self.instance, self.surface, None )
-            logging.info('Destroyed Vulkan Surface.')
-
-        if self.callback:
-            self.fnp['vkDestroyDebugReportCallbackEXT']( self.instance,
-                                                         self.callback, None)
-
-        if self.instance:
-            vkDestroyInstance(self.instance, None)
-            logging.info('Destroyed Vulkan Instance.')
-
-
     def cleanup1(self):
         '''Destroy Vulkan Object and some children objects.'''
         
         print('========= Function _cleanup1() Activated ==============')
 
+        self._cleanSwapChain()
+        
         if self.semaphore_image_drawn:
             vkDestroySemaphore( self.logical_device,
                                 self.semaphore_image_drawn, None )
@@ -1629,11 +1492,11 @@ class Setup(object):
             logging.info('Destroyed Vulkan Instance.')
 
 
-    def _cleanupSwapChain(self):
+    def _cleanSwapChain(self):
         '''Function to destroy the swapchain object and all objects that depend
             on the swapchain or can affect window size.'''
 
-        print('========= Function _cleanupSwapChain() Activated ==============')
+        print('========= Function _cleanSwapChain() Activated ==============')
 
         if self.swapchain_framebuffers:
             for f in self.swapchain_framebuffers:
@@ -1679,7 +1542,7 @@ class Setup(object):
         vkDeviceWaitIdle(self.logical_device)
         logging.info('All outstanding queue operations for all queues in Logical')
 
-        self._cleanupSwapChain()
+        self._cleanSwapChain()
 
         self._createSwapChain()
         self._createImageviews()
